@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../components/Header";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Modal, Form, Container } from "react-bootstrap";
 // import loading from "../../assets/loader.gif";
 import "./home.css";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { addTransaction, getTransactions } from "../../utils/ApiRequest";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -18,7 +21,26 @@ import Analytics from "./Analytics";
 
 const Home = () => {
   const navigate = useNavigate();
-
+  const pdfRef = useRef();
+  const downloadPDF = () => {
+    const input = pdfRef.current;
+    html2canvas(input).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4', true); // Initialize jsPDF
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight); // Calculate scaling ratio
+      const imgX = (pdfWidth - imgWidth * ratio) / 2; // Center image horizontally
+      const imgY = 30; // Set Y position
+  
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save('invoice.pdf'); // Save the PDF
+    });
+  };
   const toastOptions = {
     position: "bottom-right",
     autoClose: 2000,
@@ -390,13 +412,16 @@ const Home = () => {
             </div>
             {view === "table" ? (
               <>
+                <div ref={pdfRef}>
                 <TableData data={transactions} user={cUser} />
+                </div>
               </>
             ) : (
               <>
                 <Analytics transactions={transactions} user={cUser} />
               </>
             )}
+            <button className="btn btn-primary center" onClick={downloadPDF}>Download PDF</button>
             <ToastContainer />
           </Container>
         </>
